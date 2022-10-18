@@ -60,8 +60,8 @@ int print_pointer(va_list types, char buffer[],
  * print_non_printable - Prints ascii codes in hexa of non printable chars
  * @types: Lista of arguments
  *  @buffer: Buffer array to handle print
- *    @flags:  This Calculates active flags
- *    @width: get width
+ *  @flags:  This Calculates active flags
+ *  @width: get width
  *     @precision: The Precision specification
  *     @size: The Size specifier
  *      Return: The Number of chars printed
