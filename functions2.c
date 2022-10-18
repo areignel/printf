@@ -1,92 +1,188 @@
 #include "main.h"
-#include <stdarg.h>
-#include <stdlib.h>
 
+/****************** PRINT POINTER ******************/
 /**
- * print_unsignedToBinary - prints an integer.
- * @arg: argument
- * Return: 0
+ * print_pointer - Function that prints the value of a pointer variable
+ * @types: The List a of arguments
+ * @buffer: The Buffer array to handle print
+ * @flags:  This Calculates active flags
+ * @width: get width
+ * @precision: The Precision specification
+ * @size: The Size specifier
+ * Return: The Number of chars printed.
  */
-int print_unsignedToBinary(va_list arg)
+int print_pointer(va_list types, char buffer[],
+	int flags, int width, int precision, int size)
 {
+	char extra_c = 0, padd = ' ';
+	int ind = BUFF_SIZE - 2, length = 2, padd_start = 1; /* length=2, for '0x' */
+	unsigned long num_addrs;
+	char map_to[] = "0123456789abcdef";
+	void *addrs = va_arg(types, void *);
 
-unsigned int n = va_arg(arg, unsigned int);
-unsigned int printed;
+	UNUSED(width);
+	UNUSED(size);
 
-print_binary(n, &printed);
-print_binary(n, &printed);
+	if (addrs == NULL)
+		return (write(1, "(nil)", 5));
 
-return (printed);
+	buffer[BUFF_SIZE - 1] = '\0';
+	UNUSED(precision);
+
+	num_addrs = (unsigned long)addrs;
+
+	while (num_addrs > 0)
+	{
+		buffer[ind--] = map_to[num_addrs % 16];
+		num_addrs /= 16;
+		length++;
+	}
+
+	if ((flags & F_ZERO) && !(flags & F_MINUS))
+		padd = '0';
+	if (flags & F_PLUS)
+		extra_c = '+', length++;
+	else if (flags & F_SPACE)
+		extra_c = ' ', length++;
+
+	ind++;
+
+	/*return (write(1, &buffer[i], BUFF_SIZE - i - 1));*/
+	return (write_pointer(buffer, ind, length,
+		width, flags, padd, extra_c, padd_start));
 }
 
-
+/************************* PRINT NON PRINTABLE *************************/
 /**
- * print_oct - prints number in octal base.
- * @arg: list containing octal number to be printed
- * Return: number of octals printed
+ * print_non_printable - Prints ascii codes in hexa of non printable chars
+ * @types: Lista of arguments
+ * @buffer: Buffer array to handle print
+ * @flags:  This Calculates active flags
+ * @width: get width
+ * @precision: The Precision specification
+ * @size: The Size specifier
+ * Return: The Number of chars printed
  */
-
-int print_oct(va_list arg)
+int print_non_printable(va_list types, char buffer[],
+	int flags, int width, int precision, int size)
 {
-	unsigned int num = va_arg(arg, unsigned int);
-	unsigned int copy;
-	char *octa;
-	int i, j, charPrinted = 0;
+	int i = 0, offset = 0;
+	char *str = va_arg(types, char *);
 
-	if (num == 0)
-		return (_putchar('0'));
-	for (copy = num; copy != 0; j++)
+	UNUSED(flags);
+	UNUSED(width);
+	UNUSED(precision);
+	UNUSED(size);
+
+	if (str == NULL)
+		return (write(1, "(null)", 6));
+
+	while (str[i] != '\0')
 	{
-		copy = copy / 8;
-	}
-	octa = malloc(j);
-	if (!octa)
-		return (-1);
-
-	for (i = j - 1; i >= 0; i--)
-	{
-		octa[i] = num % 8 + '0';
-		num = num / 8;
-	}
-
-	for (i = 0; i < j && octa[i] == '0'; i++)
-		;
-	for (; i < j; i++)
-	{
-		_putchar(octa[i]);
-		charPrinted++;
-	}
-	free(octa);
-	return (charPrinted);
-}
-
-/**
- * print_unsignedIntToHex - prints unsigned int to hexadecimal.
- * @num: number to print
- * @_case: letter `a` on the case to print it (upper or lower)
- * Return: number or char printed
- */
-int print_unsignedIntToHex(unsigned int num, char _case)
-{
-	unsigned int num2;
-	int i, j, remainder, nbrCharacters = 0;
-	char *numhex;
-
-	for (num2 = num; num2 != 0; nbrCharacters++, num2 /= 16)
-	;
-
-	numhex = malloc(nbrCharacters);
-	for (i = 0; num != 0; i++)
-	{
-		remainder = num % 16;
-		if (remainder < 10)
-			numhex[i] = remainder + '0';
+		if (is_printable(str[i]))
+			buffer[i + offset] = str[i];
 		else
-			numhex[i] = remainder - 10 + _case;
-		num = num / 16;
+			offset += append_hexa_code(str[i], buffer, i + offset);
+
+		i++;
 	}
-	for (j = i - 1; j >= 0; j--)
-		_putchar(numhex[j]);
-	free(numhex);
-	return (nbrCharacters);
+
+	buffer[i + offset] = '\0';
+
+	return (write(1, buffer, i + offset));
+}
+
+/************************* PRINT REVERSE *************************/
+/**
+ * print_reverse - Prints reverse string.
+ * @types: The Lista of arguments
+ * @buffer: Buffer array to handle print
+ * @flags:  This Calculates active flags
+ * @width: get width
+ * @precision:The Precision specification
+ * @size: The size specifier
+ * Return: he numbers of chars printed
+ */
+
+int print_reverse(va_list types, char buffer[],
+	int flags, int width, int precision, int size)
+{
+	char *str;
+	int i, count = 0;
+
+	UNUSED(buffer);
+	UNUSED(flags);
+	UNUSED(width);
+	UNUSED(size);
+
+	str = va_arg(types, char *);
+
+	if (str == NULL)
+	{
+		UNUSED(precision);
+
+		str = ")Null(";
+	}
+	for (i = 0; str[i]; i++)
+		;
+
+	for (i = i - 1; i >= 0; i--)
+	{
+		char z = str[i];
+
+		write(1, &z, 1);
+		count++;
+	}
+	return (count);
+}
+/************************* PRINT A STRING IN ROT13 *************************/
+/**
+ * print_rot13string - Function that prints a string in rot13.
+ * @types: Lista of arguments
+ * @buffer: Buffer array to handle print
+ * @flags:  This Calculates active flags
+ * @width: get width
+ * @precision: The Precision specification
+ * @size: The size specifier
+ * Return: The numbers of chars printed
+ */
+int print_rot13string(va_list types, char buffer[],
+	int flags, int width, int precision, int size)
+{
+	char x;
+	char *str;
+	unsigned int i, j;
+	int count = 0;
+	char in[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	char out[] = "NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm";
+
+	str = va_arg(types, char *);
+	UNUSED(buffer);
+	UNUSED(flags);
+	UNUSED(width);
+	UNUSED(precision);
+	UNUSED(size);
+
+	if (str == NULL)
+		str = "(AHYY)";
+	for (i = 0; str[i]; i++)
+	{
+		for (j = 0; in[j]; j++)
+		{
+			if (in[j] == str[i])
+			{
+				x = out[j];
+				write(1, &x, 1);
+				count++;
+				break;
+			}
+		}
+		if (!in[j])
+		{
+			x = str[i];
+			write(1, &x, 1);
+			count++;
+		}
+	}
+	return (count);
 }
